@@ -125,9 +125,85 @@
         .fade-animation {
             animation: fadeInOut 2s ease-in-out;
         }
+
+        /* Dark mode styles */
+        [data-theme="dark"] {
+            background-color: #1a1a1a;
+            color: #ffffff;
+        }
+
+        [data-theme="dark"] .container {
+            background: rgba(40, 40, 40, 0.95);
+            border-color: rgba(80, 80, 80, 0.2);
+        }
+
+        .theme-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 10px;
+            border-radius: 50%;
+            background: #007BFF;
+            color: white;
+            cursor: pointer;
+            border: none;
+            width: 40px;
+            height: 40px;
+        }
+
+        /* Preview area */
+        .preview-area {
+            border: 2px dashed #ccc;
+            padding: 20px;
+            margin: 10px 0;
+            min-height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .preview-area.drag-over {
+            background: rgba(0, 123, 255, 0.1);
+            border-color: #007BFF;
+        }
+
+        /* Calendar view */
+        .calendar-view {
+            margin-top: 20px;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 8px;
+        }
+
+        /* Voice command indicator */
+        .voice-indicator {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: #007BFF;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .voice-indicator.listening {
+            animation: pulse 1s infinite;
+            background: #dc3545;
+        }
     </style>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
 </head>
 <body>
+    <button class="theme-toggle" onclick="toggleTheme()">🌓</button>
+    <div class="voice-indicator" onclick="toggleVoiceRecognition()">🎤</div>
     <div class="container">
         <h2>MedSync - MVP</h2>
         <p>Upload your prescription and set medication reminders</p>
@@ -144,6 +220,15 @@
         <div id="prescriptions">
             <h3>Uploaded Prescriptions</h3>
             <ul id="prescriptionList"></ul>
+        </div>
+
+        <div class="preview-area" id="dropZone">
+            <span>Drop prescription here or click to upload</span>
+        </div>
+        
+        <div class="calendar-view">
+            <h3>Medicine Schedule</h3>
+            <div id="calendar"></div>
         </div>
     </div>
 
@@ -220,6 +305,89 @@
         }
 
         displayPrescriptions();
+
+        // Theme toggling
+        function toggleTheme() {
+            document.body.dataset.theme = 
+                document.body.dataset.theme === 'dark' ? 'light' : 'dark';
+            localStorage.setItem('theme', document.body.dataset.theme);
+        }
+
+        // Voice recognition
+        function toggleVoiceRecognition() {
+            if (!('webkitSpeechRecognition' in window)) {
+                alert('Voice recognition not supported');
+                return;
+            }
+
+            const recognition = new webkitSpeechRecognition();
+            recognition.continuous = false;
+            recognition.interimResults = false;
+
+            recognition.onstart = () => {
+                document.querySelector('.voice-indicator').classList.add('listening');
+            };
+
+            recognition.onend = () => {
+                document.querySelector('.voice-indicator').classList.remove('listening');
+            };
+
+            recognition.onresult = (event) => {
+                const command = event.results[0][0].transcript.toLowerCase();
+                if (command.includes('upload')) {
+                    document.getElementById('uploadPrescription').click();
+                } else if (command.includes('reminder')) {
+                    document.getElementById('reminderTime').focus();
+                }
+            };
+
+            recognition.start();
+        }
+
+        // Drag and drop
+        const dropZone = document.getElementById('dropZone');
+        
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('drag-over');
+        });
+
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('drag-over');
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('drag-over');
+            const files = e.dataTransfer.files;
+            document.getElementById('uploadPrescription').files = files;
+            uploadPrescription();
+        });
+
+        // Modify existing uploadPrescription function
+        const originalUploadPrescription = uploadPrescription;
+        uploadPrescription = () => {
+            originalUploadPrescription();
+            confetti({
+                particleCount: 100,
+                spread: 70,
+                origin: { y: 0.6 }
+            });
+        };
+
+        // Initialize theme
+        document.body.dataset.theme = localStorage.getItem('theme') || 'light';
+
+        // Initialize calendar
+        flatpickr("#calendar", {
+            inline: true,
+            mode: "multiple",
+            dateFormat: "Y-m-d",
+            onChange: (selectedDates) => {
+                // Store selected dates in localStorage
+                localStorage.setItem('medicationDates', JSON.stringify(selectedDates));
+            }
+        });
     </script>
 </body>
 </html>
