@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MedSync MVP</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            padding: 0;
+            background-color: #f4f4f4;
+            text-align: center;
+        }
+        .container {
+            max-width: 500px;
+            margin: auto;
+            padding: 20px;
+            background: white;
+            box-shadow: 0px 0px 10px rgba(0,0,0,0.1);
+            border-radius: 8px;
+        }
+        input, button {
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        button {
+            background: #007BFF;
+            color: white;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        #prescriptions {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>MedSync - MVP</h2>
+        <p>Upload your prescription and set medication reminders</p>
+        
+        <input type="file" id="uploadPrescription" accept="image/*,application/pdf">
+        <button onclick="uploadPrescription()">Upload Prescription</button>
+        
+        <h3>Set Medication Reminder</h3>
+        <input type="time" id="reminderTime">
+        <button onclick="setReminder()">Set Reminder</button>
+        
+        <div id="prescriptions">
+            <h3>Uploaded Prescriptions</h3>
+            <ul id="prescriptionList"></ul>
+        </div>
+    </div>
+
+    <script>
+        function uploadPrescription() {
+            const fileInput = document.getElementById('uploadPrescription');
+            if (fileInput.files.length > 0) {
+                const fileName = fileInput.files[0].name;
+                let prescriptions = JSON.parse(localStorage.getItem('prescriptions')) || [];
+                prescriptions.push(fileName);
+                localStorage.setItem('prescriptions', JSON.stringify(prescriptions));
+                displayPrescriptions();
+                alert('Prescription uploaded successfully!');
+            } else {
+                alert('Please select a file to upload.');
+            }
+        }
+
+        function setReminder() {
+            const time = document.getElementById('reminderTime').value;
+            if (time) {
+                alert(`Reminder set for ${time}. A notification will be shown at this time.`);
+                setTimeout(() => {
+                    sendNotification('Medication Reminder', 'Time to take your medication!');
+                    alert('Time to take your medication!');
+                }, calculateTimeDiff(time));
+            } else {
+                alert('Please select a time.');
+            }
+        }
+
+        function calculateTimeDiff(time) {
+            const now = new Date();
+            const reminderTime = new Date();
+            const [hours, minutes] = time.split(':');
+            reminderTime.setHours(hours, minutes, 0, 0);
+            let diff = reminderTime - now;
+            if (diff < 0) diff += 24 * 60 * 60 * 1000; // Adjust for next day
+            return diff;
+        }
+
+        function sendNotification(title, body) {
+            if (Notification.permission === 'granted') {
+                new Notification(title, { body });
+            } else if (Notification.permission !== 'denied') {
+                Notification.requestPermission().then(permission => {
+                    if (permission === 'granted') {
+                        new Notification(title, { body });
+                    }
+                });
+            }
+        }
+
+        function displayPrescriptions() {
+            const prescriptionList = document.getElementById('prescriptionList');
+            prescriptionList.innerHTML = '';
+            const prescriptions = JSON.parse(localStorage.getItem('prescriptions')) || [];
+            prescriptions.forEach(prescription => {
+                let li = document.createElement('li');
+                li.textContent = prescription;
+                prescriptionList.appendChild(li);
+            });
+        }
+
+        displayPrescriptions();
+    </script>
+</body>
+</html>
