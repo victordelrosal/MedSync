@@ -38,6 +38,38 @@
         #prescriptions {
             margin-top: 20px;
         }
+
+        @keyframes uploadSuccess {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+
+        .success-animation {
+            animation: uploadSuccess 0.5s ease-in-out;
+        }
+
+        .upload-feedback {
+            display: none;
+            color: #28a745;
+            font-size: 24px;
+            margin: 10px 0;
+        }
+
+        .upload-feedback.show {
+            display: block;
+        }
+
+        @keyframes fadeInOut {
+            0% { opacity: 0; transform: translateY(-20px); }
+            20% { opacity: 1; transform: translateY(0); }
+            80% { opacity: 1; transform: translateY(0); }
+            100% { opacity: 0; transform: translateY(20px); }
+        }
+
+        .fade-animation {
+            animation: fadeInOut 2s ease-in-out;
+        }
     </style>
 </head>
 <body>
@@ -48,6 +80,8 @@
         <input type="file" id="uploadPrescription" accept="image/*,application/pdf">
         <button onclick="uploadPrescription()">Upload Prescription</button>
         
+        <div class="upload-feedback" id="uploadFeedback">✅ Upload Successful!</div>
+
         <h3>Set Medication Reminder</h3>
         <input type="time" id="reminderTime">
         <button onclick="setReminder()">Set Reminder</button>
@@ -66,8 +100,19 @@
                 let prescriptions = JSON.parse(localStorage.getItem('prescriptions')) || [];
                 prescriptions.push(fileName);
                 localStorage.setItem('prescriptions', JSON.stringify(prescriptions));
+                
+                // Show animation feedback
+                const container = document.querySelector('.container');
+                const feedback = document.getElementById('uploadFeedback');
+                container.classList.add('success-animation');
+                feedback.classList.add('show', 'fade-animation');
+                
+                setTimeout(() => {
+                    container.classList.remove('success-animation');
+                    feedback.classList.remove('show', 'fade-animation');
+                }, 2000);
+
                 displayPrescriptions();
-                alert('Prescription uploaded successfully!');
             } else {
                 alert('Please select a file to upload.');
             }
